@@ -1,0 +1,10 @@
+{
+  "domain": "eta_heating",
+  "name": "ETA Heating",
+  "documentation": "todo",
+  "dependencies": [],
+  "codeowners": [],
+  "requirements": ["requests", "xmltodict"],
+  "iot_class": "local_polling",
+  "version": "0.1.0"
+}
