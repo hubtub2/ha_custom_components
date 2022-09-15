@@ -75,17 +75,15 @@ def setup_platform(
     
     # TODO: read http://192.168.178.75:8080/user/menu and get friendly name in original language 
     entities = [
-        EtaSensor(config, hass, get_entity_name(config, "/user/var/120/10601/0/0/12197"), "/user/var/120/10601/0/0/12197", TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var/40/10021/0/0/12077"), "/user/var/40/10021/0/0/12077", POWER_KILO_WATT),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var///40/10021/0/0/12006"), "/user/var///40/10021/0/0/12006", TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var///40/10021/0/11109/0"), "/user/var///40/10021/0/11109/0", TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var//40/10021/0/11110/0"), "/user/var//40/10021/0/11110/0", TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var///120/10101/0/11125/2121"), "/user/var///120/10101/0/11125/2121", TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var//40/10201/0/0/12015"), "/user/var//40/10201/0/0/12015", MASS_KILOGRAMS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var//40/10021/0/0/12016"), "/user/var//40/10021/0/0/12016", MASS_KILOGRAMS),
-        EtaSensor(config, hass, get_entity_name(config, "/user/var//40/10021/0/0/12016"), "/user/var//40/10021/0/0/12016", ENERGY_KILO_WATT_HOUR, device_class = SensorDeviceClass.ENERGY, state_class = SensorStateClass.TOTAL_INCREASING, factor = 4.8)
-        
-        
+        EtaSensor(config, hass, get_entity_name(config, "/120/10601/0/0/12197"), "/user/var/120/10601/0/0/12197", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12077"), "/user/var/40/10021/0/0/12077", POWER_KILO_WATT),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12006"), "/user/var/40/10021/0/0/12006", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11109/0"), "/user/var/40/10021/0/11109/0", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11110/0"), "/user/var/40/10021/0/11110/0", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/120/10101/0/11125/2121"), "/user/var/120/10101/0/11125/2121", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10201/0/0/12015"), "/user/var/40/10201/0/0/12015", MASS_KILOGRAMS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016"), "/user/var/40/10021/0/0/12016", MASS_KILOGRAMS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016"), "/user/var/40/10021/0/0/12016", ENERGY_KILO_WATT_HOUR, device_class = SensorDeviceClass.ENERGY, state_class = SensorStateClass.TOTAL_INCREASING, factor = 4.8)
     ]
     
     
