@@ -126,7 +126,7 @@ class EtaSensor(SensorEntity):
         #self.entity_description = description
         self._attr_native_unit_of_measurement = unit
         self.uri = uri
-        self.factor = 1.0
+        self.factor = factor
         self.host = config.get(CONF_HOST)
         self.port = config.get(CONF_PORT)
         
