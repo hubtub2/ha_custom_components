@@ -13,11 +13,14 @@ author hubtub2
 from __future__ import annotations
 import requests  
 import xmltodict
+from lxml import etree
 import logging
 import voluptuous as vol
 
 
 _LOGGER = logging.getLogger(__name__)
+VAR_PATH = "/user/var"
+MENU_PATH = "/user/menu"
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -48,6 +51,26 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 })
 
 
+def get_base_url(
+        config: ConfigType,
+        context: str = ""
+) -> str:
+    return "".join(["http://", config.get(CONF_HOST), ":", str(config.get(CONF_PORT)), context])
+
+
+def get_entity_name(
+        config: ConfigType,
+        uri: str
+) -> str:
+    ns = {'xsi':'http://www.eta.co.at/rest/v1'}
+    # TODO: exception handling
+    data = requests.get(get_base_url(config, MENU_PATH), stream=True)
+    data.raw.decode_content = True
+    doc = etree.parse(data.raw)
+    for o in doc.iterfind('//xsi:object', namespaces=ns):
+        if o.attrib.get('uri') == uri:
+            return o.attrib.get('name')
+    return "unknown"
 
 
 def setup_platform(
@@ -59,25 +82,19 @@ def setup_platform(
     """Set up the sensor platform."""
     
     _LOGGER.warning("ETA Integration - setup platform")
-    
-    # TODO: read http://192.168.178.75:8080/user/menu and get friendly name in original language 
-    entities = [
-        EtaSensor(config, hass, "Außentemperatur", "/user/var/120/10601/0/0/12197", TEMP_CELSIUS),
-        EtaSensor(config, hass, "Requested Power", "/user/var/40/10021/0/0/12077", POWER_KILO_WATT),
-        EtaSensor(config, hass, "Requested Temp", "/user/var///40/10021/0/0/12006", TEMP_CELSIUS), 
-        EtaSensor(config, hass, "Kesseltemperatur", "/user/var///40/10021/0/11109/0", TEMP_CELSIUS), 
-        EtaSensor(config, hass, "Abgastemperatur", "/user/var//40/10021/0/11110/0", TEMP_CELSIUS), 
-        EtaSensor(config, hass, "Vorlauftemperatur", "/user/var///120/10101/0/11125/2121", TEMP_CELSIUS), 
-        EtaSensor(config, hass, "Silo", "/user/var//40/10201/0/0/12015", MASS_KILOGRAMS),    
-        EtaSensor(config, hass, "Pellets Gesamtverbrauch", "/user/var//40/10021/0/0/12016", MASS_KILOGRAMS),
-        EtaSensor(config, hass, "Pellets Gesamtenergie", "/user/var//40/10021/0/0/12016", ENERGY_KILO_WATT_HOUR, device_class = SensorDeviceClass.ENERGY, state_class = SensorStateClass.TOTAL_INCREASING, factor = 4.8) 
-        
-        
-    ]
-    
-    
-    add_entities( entities )
 
+    entities = [
+        EtaSensor(config, hass, get_entity_name(config, "/120/10601/0/0/12197"), "/user/var/120/10601/0/0/12197", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12077"), "/user/var/40/10021/0/0/12077", POWER_KILO_WATT),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12006"), "/user/var/40/10021/0/0/12006", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11109/0"), "/user/var/40/10021/0/11109/0", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11110/0"), "/user/var/40/10021/0/11110/0", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/120/10101/0/11125/2121"), "/user/var/120/10101/0/11125/2121", TEMP_CELSIUS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10201/0/0/12015"), "/user/var/40/10201/0/0/12015", MASS_KILOGRAMS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016"), "/user/var/40/10021/0/0/12016", MASS_KILOGRAMS),
+        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016") + " Energie", "/user/var/40/10021/0/0/12016", ENERGY_KILO_WATT_HOUR, device_class = SensorDeviceClass.ENERGY, state_class = SensorStateClass.TOTAL_INCREASING, factor = 4.8)
+    ]
+    add_entities( entities )
 
 
 class EtaSensor(SensorEntity):
@@ -114,9 +131,8 @@ class EtaSensor(SensorEntity):
         self.port = config.get(CONF_PORT)
         
         # This must be a unique value within this domain. This is done use serial number of device
-        base = "http://" + self.host + ":" + str(self.port) 
-        serial1 = requests.get(base + "/user/var/40/10021/0/0/12489")
-        serial2 = requests.get(base + "/user/var/40/10021/0/0/12490")
+        serial1 = requests.get(get_base_url(config, VAR_PATH) + "/40/10021/0/0/12489")
+        serial2 = requests.get(get_base_url(config, VAR_PATH) + "/40/10021/0/0/12490")
         
         # Parse
         serial1 = xmltodict.parse(serial1.text)
@@ -139,7 +155,3 @@ class EtaSensor(SensorEntity):
         value = float( value.replace(',', '.') ) * self.factor
 
         self._attr_native_value = value
-        
- 
-        
-        
