@@ -5,10 +5,12 @@
 # 3. (transfer the new file to your home assistant server into the "eta/" folder
 
 """
-@name is mandatory, if not defined the original localized name of the variable will be used
+@name is optional, if not defined the original localized name of the variable will be used
 @uri is required
-@unit is mandatory
-@factor is mandatory
+@unit is optional
+@device_class is optional
+@state_class is optional
+@factor is optional
 """
 from homeassistant.const import TIME_SECONDS
 

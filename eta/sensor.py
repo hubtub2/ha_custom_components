@@ -12,6 +12,8 @@ author hubtub2
 
 from __future__ import annotations
 import logging
+import os
+
 import requests
 import voluptuous as vol
 import xmltodict
@@ -87,6 +89,16 @@ def setup_platform(
                   sensor.get('device_class'), sensor.get('factor'))
         for sensor in SENSORS_DEFAULT
     ])
+
+    try:
+        from .sensors_custom import SENSORS_CUSTOM
+        add_entities([
+            EtaSensor(config, hass, sensor.get('name'), sensor.get('uri'), sensor.get('unit'), sensor.get('state_class'),
+                      sensor.get('device_class'), sensor.get('factor'))
+            for sensor in SENSORS_CUSTOM
+        ])
+    except ImportError as error:
+        _LOGGER.info("ETA Integration - no custom sensors found")
 
 
 class EtaSensor(SensorEntity):
