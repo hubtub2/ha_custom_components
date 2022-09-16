@@ -16,6 +16,7 @@ sensor:
     port: PORT_OF_YOUR_ETA_WEBSERIVCE (default is 8080)
     scan_interval: 60
 ```
+
 Restart your home assistant. Done.
 
 ## Add custom sensors
