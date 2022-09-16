@@ -34,6 +34,8 @@ from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.const import (CONF_HOST, CONF_PORT, TEMP_CELSIUS, ENERGY_KILO_WATT_HOUR, POWER_KILO_WATT,
                                  MASS_KILOGRAMS)
 
+from .sensors_default import SENSORS_DEFAULT
+
 _LOGGER = logging.getLogger(__name__)
 VAR_PATH = "/user/var"
 MENU_PATH = "/user/menu"
@@ -78,39 +80,19 @@ def setup_platform(
 ) -> None:
     """Set up the sensor platform."""
 
-    _LOGGER.warning("ETA Integration - setup platform")
+    _LOGGER.info("ETA Integration - setup platform")
 
-    entities = [
-        EtaSensor(config, hass, get_entity_name(config, "/120/10601/0/0/12197"), "/user/var/120/10601/0/0/12197",
-                  TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12077"), "/user/var/40/10021/0/0/12077",
-                  POWER_KILO_WATT),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12006"), "/user/var/40/10021/0/0/12006",
-                  TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11109/0"), "/user/var/40/10021/0/11109/0",
-                  TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/11110/0"), "/user/var/40/10021/0/11110/0",
-                  TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/120/10101/0/11125/2121"), "/user/var/120/10101/0/11125/2121",
-                  TEMP_CELSIUS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10201/0/0/12015"), "/user/var/40/10201/0/0/12015",
-                  MASS_KILOGRAMS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016"), "/user/var/40/10021/0/0/12016",
-                  MASS_KILOGRAMS),
-        EtaSensor(config, hass, get_entity_name(config, "/40/10021/0/0/12016") + " Energie",
-                  "/user/var/40/10021/0/0/12016", ENERGY_KILO_WATT_HOUR, device_class=SensorDeviceClass.ENERGY,
-                  state_class=SensorStateClass.TOTAL_INCREASING, factor=4.8)
-    ]
-    add_entities(entities)
+    add_entities([
+        EtaSensor(config, hass, sensor.get('name'), sensor.get('uri'), sensor.get('unit'), sensor.get('state_class'),
+                  sensor.get('device_class'), sensor.get('factor'))
+        for sensor in SENSORS_DEFAULT
+    ])
 
 
 class EtaSensor(SensorEntity):
     """Representation of a Sensor."""
 
-    # _attr_device_class = SensorDeviceClass.TEMPERATURE
-    # _attr_state_class = SensorStateClass.MEASUREMENT
-
-    def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT,
+    def __init__(self, config, hass, name, uri, unit=None, state_class=SensorStateClass.MEASUREMENT,
                  device_class=SensorDeviceClass.TEMPERATURE, factor=1.0):
         """
         Initialize sensor.
@@ -123,18 +105,18 @@ class EtaSensor(SensorEntity):
           - unique_id - globally unique id of sensor, e.g. "eta_11.123488_outside_temp", based on serial number
         
         """
-        _LOGGER.warning("ETA Integration - init sensor")
+        _LOGGER.info("ETA Integration - init sensor")
 
         self._attr_state_class = state_class
         self._attr_device_class = device_class
-
+        name = name if name else get_entity_name(config, uri)
         id = name.lower().replace(' ', '_')
         self._attr_name = name  # friendly name - local language
         self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "eta_" + id, hass=hass)
         # self.entity_description = description
         self._attr_native_unit_of_measurement = unit
-        self.uri = uri
-        self.factor = factor
+        self.uri = VAR_PATH + uri
+        self.factor = factor if factor else 1.0
         self.host = config.get(CONF_HOST)
         self.port = config.get(CONF_PORT)
 
