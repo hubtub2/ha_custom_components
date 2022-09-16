@@ -33,8 +33,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import generate_entity_id
 
 # See https://github.com/home-assistant/core/blob/dev/homeassistant/const.py
-from homeassistant.const import (CONF_HOST, CONF_PORT, TEMP_CELSIUS, ENERGY_KILO_WATT_HOUR, POWER_KILO_WATT,
-                                 MASS_KILOGRAMS)
+from homeassistant.const import (CONF_HOST, CONF_PORT)
 
 from .sensors_default import SENSORS_DEFAULT
 
@@ -153,7 +152,4 @@ class EtaSensor(SensorEntity):
         # REST GET
         data = requests.get("http://" + self.host + ":" + str(self.port) + self.uri)
         data = xmltodict.parse(data.text)
-        value = data['eta']['value']['@strValue']
-        value = float(value.replace(',', '.')) * self.factor
-
-        self._attr_native_value = value
+        self._attr_native_value = round(int(data['eta']['value']['#text']) * self.factor / int(data['eta']['value']['@scaleFactor']), int(data['eta']['value']['@decPlaces']))
