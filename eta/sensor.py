@@ -152,7 +152,7 @@ def setup_platform(
 ) -> None:
     """Set up the sensor platform."""
 
-    _LOGGER.warning("ETA Integration - setup platform")
+    _LOGGER.info("ETA Integration - setup platform")
 
     add_entities(Setup(config, hass).get_entries())
 
