@@ -195,7 +195,7 @@ class EtaSensor(SensorEntity):
           - unique_id - globally unique id of sensor, e.g. "eta_11.123488_outside_temp", based on serial number
         
         """
-        _LOGGER.warning(f"ETA Integration - Init Sensor: {name}")
+        _LOGGER.info(f"ETA Integration - Init Sensor: {name}")
 
         self._attr_state_class = state_class
 
