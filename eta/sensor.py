@@ -30,10 +30,9 @@ from homeassistant.components.sensor import (
     ENTITY_ID_FORMAT
 )
 
-from homeassistant.const import UnitOfFrequency, UnitOfPower, UnitOfTemperature, UnitOfMass, UnitOfPressure, \
-    UnitOfElectricCurrent, UnitOfTime, UnitOfElectricPotential, AREA_SQUARE_METERS, PERCENTAGE, UnitOfVolume, \
-    UnitOfIrradiance, FREQUENCY_HERTZ, PRESSURE_BAR, ELECTRIC_POTENTIAL_VOLT, TIME_SECONDS, POWER_WATT, VOLUME_LITERS, \
-    ELECTRIC_POTENTIAL_MILLIVOLT, IRRADIATION_WATTS_PER_SQUARE_METER
+from homeassistant.const import FREQUENCY_HERTZ, PRESSURE_BAR, ELECTRIC_POTENTIAL_VOLT, TIME_SECONDS, POWER_WATT, \
+    VOLUME_LITERS, ELECTRIC_POTENTIAL_MILLIVOLT, IRRADIATION_WATTS_PER_SQUARE_METER, ELECTRIC_CURRENT_MILLIAMPERE, \
+    PRESSURE_PA, PERCENTAGE, AREA_SQUARE_METERS
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -100,10 +99,13 @@ class Setup:
     def __init__(self, config, hass):
         self.config = config
         self.hass = hass
-        self.entities = []
+        self.entities = {}
 
         res = requests.get(get_base_url(self.config, MENU_PATH)).content.decode("utf8")
         self._find_useful_entities(ET.fromstring(res))
+
+    def get_entries(self) -> list:
+        return list(self.entities.values())
 
     @staticmethod
     def _remove_duplicates_from_name(name):
@@ -112,20 +114,19 @@ class Setup:
 
     def _find_useful_entities(self, root, prev=""):
         for child in root:
+            self._find_useful_entities(child, prev=prev + " " + child.attrib.get("name", ""))
+
+            new_name = prev + " " + child.attrib.get("name", "")
+            if new_name in self.entities:
+                continue
+
             measure = get_measure(self.config, child.attrib['uri'])
             if measure:
-                new_name = prev + " " + child.attrib.get("name", "")
                 new_name = self._remove_duplicates_from_name(new_name)
                 value, unit = measure
                 uri = child.attrib['uri']
 
-                self.entities.append(
-                    EtaSensor(self.config, self.hass, new_name,
-                              uri,
-                              unit)
-                )
-
-            self._find_useful_entities(child, prev=prev + " " + child.attrib.get("name", ""))
+                self.entities[new_name] = EtaSensor(self.config, self.hass, new_name, uri, unit)
 
 
 def get_entity_name(
@@ -153,7 +154,7 @@ def setup_platform(
 
     _LOGGER.warning("ETA Integration - setup platform")
 
-    add_entities(Setup(config, hass).entities)
+    add_entities(Setup(config, hass).get_entries())
 
 
 class EtaSensor(SensorEntity):
@@ -170,7 +171,7 @@ class EtaSensor(SensorEntity):
             "°C": (TEMP_CELSIUS, (None, SensorDeviceClass.TEMPERATURE)),
             "kg": (MASS_KILOGRAMS, (None, SensorDeviceClass.WEIGHT)),
             "bar": (PRESSURE_BAR, (None, SensorDeviceClass.PRESSURE)),
-            "A": (UnitOfElectricCurrent, (None, SensorDeviceClass.CURRENT)),
+            "A": (ELECTRIC_CURRENT_MILLIAMPERE, (None, SensorDeviceClass.CURRENT)),
             "s": (TIME_SECONDS, (None, SensorDeviceClass.TIMESTAMP)),
             "V": (ELECTRIC_POTENTIAL_VOLT, (None, SensorDeviceClass.VOLTAGE)),
             "m²": (AREA_SQUARE_METERS, (None, SensorDeviceClass.DATA_SIZE)),
@@ -179,9 +180,9 @@ class EtaSensor(SensorEntity):
             "l": (VOLUME_LITERS, (None, SensorDeviceClass.WATER)),
             "mV": (ELECTRIC_POTENTIAL_MILLIVOLT, (None, SensorDeviceClass.VOLTAGE)),
             "W/m²": (IRRADIATION_WATTS_PER_SQUARE_METER, (None, SensorDeviceClass.POWER)),
-            "Pa": (UnitOfPressure, (None, SensorDeviceClass.PRESSURE)),
+            "Pa": (PRESSURE_PA, (None, SensorDeviceClass.PRESSURE)),
             "bool": (None, (None, SensorDeviceClass.REACTIVE_POWER))
-        }.get(unit, (None, SensorDeviceClass.REACTIVE_POWER))
+        }.get(unit, (None, None))
 
     def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT, factor=1.0):
         """
@@ -204,7 +205,9 @@ class EtaSensor(SensorEntity):
         self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "eta_" + id, hass=hass)
 
         hassio_unit, device_class = self._unit_mapper(unit)
-        self._attr_device_class = device_class
+
+        if device_class is not None:
+            self._attr_device_class = device_class
 
         if hassio_unit is not None:
             self._attr_native_unit_of_measurement = hassio_unit
@@ -236,4 +239,5 @@ class EtaSensor(SensorEntity):
         TODO: readme: activate first: http://www.holzheizer-forum.de/attachment/28434-eta-restful-v1-1-pdf/
         """
         value, unit = get_measure(self.config, self.uri)
-        self._attr_native_value = value
+        if value:
+            self._attr_native_value = value
