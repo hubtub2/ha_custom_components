@@ -15,4 +15,6 @@ sensor:
     scan_interval: 60
 ```
 
-Restart your home assistant. Done.
+Restart your home assistant.
+
+Because literally everything that is measureable is added as entity, it is recommended to disable every measure, and then reenable every measure that is needed!.

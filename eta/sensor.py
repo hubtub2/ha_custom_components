@@ -67,6 +67,18 @@ VAR_PATH = "/user/var"
 MENU_PATH = "/user/menu"
 
 
+def bool_mapper(input):
+    return {
+        "ein": True,
+        "aus": False,
+        "eingeschaltet": True,
+        "ausgeschaltet": False,
+        "ja": True,
+        "nein": False,
+
+    }.get(input)
+
+
 def get_measure(config, uri):
     val = requests.get(get_base_url(config, VAR_PATH) + uri).content.decode("utf8")
     root = ET.fromstring(val)[0]
@@ -76,6 +88,11 @@ def get_measure(config, uri):
 
     if root.attrib.get('unit', '') != "":
         return float(str(root.text)) * div / scale, root.attrib.get('unit', '')
+    else:
+        # check_bool_mapper
+        bool_value = bool_mapper(root.attrib.get('strValue', '').lower())
+        if bool_value is not None:
+            return bool_value, 'bool'
 
 
 class Setup:
@@ -148,25 +165,25 @@ class EtaSensor(SensorEntity):
     @staticmethod
     def _unit_mapper(unit):
         return {
-            "Hz": FREQUENCY_HERTZ,
-            "kW": POWER_KILO_WATT,
-            "°C": TEMP_CELSIUS,
-            "kg": MASS_KILOGRAMS,
-            "bar": PRESSURE_BAR,
-            "A": UnitOfElectricCurrent,
-            "s": TIME_SECONDS,
-            "V": ELECTRIC_POTENTIAL_VOLT,
-            "m²": AREA_SQUARE_METERS,
-            "%": PERCENTAGE,
-            "W": POWER_WATT,
-            "l": VOLUME_LITERS,
-            "mV": ELECTRIC_POTENTIAL_MILLIVOLT,
-            "W/m²": IRRADIATION_WATTS_PER_SQUARE_METER,
-            "Pa": UnitOfPressure
-        }.get(unit, None)
+            "Hz": (FREQUENCY_HERTZ, (None, SensorDeviceClass.FREQUENCY)),
+            "kW": (POWER_KILO_WATT, (None, SensorDeviceClass.POWER)),
+            "°C": (TEMP_CELSIUS, (None, SensorDeviceClass.TEMPERATURE)),
+            "kg": (MASS_KILOGRAMS, (None, SensorDeviceClass.WEIGHT)),
+            "bar": (PRESSURE_BAR, (None, SensorDeviceClass.PRESSURE)),
+            "A": (UnitOfElectricCurrent, (None, SensorDeviceClass.CURRENT)),
+            "s": (TIME_SECONDS, (None, SensorDeviceClass.TIMESTAMP)),
+            "V": (ELECTRIC_POTENTIAL_VOLT, (None, SensorDeviceClass.VOLTAGE)),
+            "m²": (AREA_SQUARE_METERS, (None, SensorDeviceClass.DATA_SIZE)),
+            "%": (PERCENTAGE, (None, SensorDeviceClass.POWER_FACTOR)),
+            "W": (POWER_WATT, (None, SensorDeviceClass.ENERGY)),
+            "l": (VOLUME_LITERS, (None, SensorDeviceClass.WATER)),
+            "mV": (ELECTRIC_POTENTIAL_MILLIVOLT, (None, SensorDeviceClass.VOLTAGE)),
+            "W/m²": (IRRADIATION_WATTS_PER_SQUARE_METER, (None, SensorDeviceClass.POWER)),
+            "Pa": (UnitOfPressure, (None, SensorDeviceClass.PRESSURE)),
+            "bool": (None, (None, SensorDeviceClass.REACTIVE_POWER))
+        }.get(unit, (None, SensorDeviceClass.REACTIVE_POWER))
 
-    def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT,
-                 device_class=SensorDeviceClass.TEMPERATURE, factor=1.0):
+    def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT, factor=1.0):
         """
         Initialize sensor.
         
@@ -178,16 +195,17 @@ class EtaSensor(SensorEntity):
           - unique_id - globally unique id of sensor, e.g. "eta_11.123488_outside_temp", based on serial number
         
         """
-        _LOGGER.warning(f"ETA Integration - New Sensor: {name}")
+        _LOGGER.warning(f"ETA Integration - Init Sensor: {name}")
 
         self._attr_state_class = state_class
-        self._attr_device_class = device_class
 
         id = name.lower().replace(' ', '_')
         self._attr_name = name  # friendly name - local language
         self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "eta_" + id, hass=hass)
 
-        hassio_unit = self._unit_mapper(unit)
+        hassio_unit, device_class = self._unit_mapper(unit)
+        self._attr_device_class = device_class
+
         if hassio_unit is not None:
             self._attr_native_unit_of_measurement = hassio_unit
         else:
