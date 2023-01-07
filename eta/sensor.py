@@ -209,7 +209,8 @@ class EtaSensor(SensorEntity):
         if hassio_unit is not None:
             self._attr_native_unit_of_measurement = hassio_unit
         else:
-            self._attr_name += f" {unit}"
+            if unit != "bool":
+                self._attr_name += f" {unit}"
 
         self.uri = uri
         self.factor = factor
