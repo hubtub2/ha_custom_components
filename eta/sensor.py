@@ -82,11 +82,11 @@ def get_measure(config, uri):
     val = requests.get(get_base_url(config, VAR_PATH) + uri).content.decode("utf8")
     root = ET.fromstring(val)[0]
 
-    div = pow(0.1, (int(root.attrib.get("decPlaces", "0"))))
+    # div = pow(0.1, (int(root.attrib.get("decPlaces", "0"))))
     scale = (int(root.attrib.get("scaleFactor", "1")))
 
     if root.attrib.get('unit', '') != "":
-        return float(str(root.text)) * div / scale, root.attrib.get('unit', '')
+        return float(str(root.text)) / scale, root.attrib.get('unit', '')
     else:
         # check_bool_mapper
         bool_value = bool_mapper(root.attrib.get('strValue', '').lower())
