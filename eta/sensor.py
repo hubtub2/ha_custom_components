@@ -88,7 +88,7 @@ class Setup:
 
     def _get_varinfo(self, uri):
         # TODO --> make things writeable, as we now might find out the possible varinfo states!
-        val = requests.get(get_base_url(self.config, VAR_PATH) + uri)
+        val = requests.get(get_base_url(self.config, VARINFO_PATH) + uri)
         info = xmltodict.parse(val.text)['eta']
         # print(info)
         if 'varInfo' in info:
