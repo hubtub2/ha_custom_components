@@ -100,12 +100,17 @@ class Setup:
             self._find_useful_entities(child, prev=prev + " " + child.attrib.get("name", ""))
 
             new_name = prev + " " + child.attrib.get("name", "")
-            if new_name in self.entities:
-                continue
+            new_name = self._remove_duplicates_from_name(new_name)
+            entity_name = new_name
+
+            count = 2
+            while new_name in self.entities:
+                entity_name = new_name + "_" + str(count)
+                count += 1
+            new_name = entity_name
 
             measure = self._get_varinfo(child.attrib['uri'])
             if measure:
-                new_name = self._remove_duplicates_from_name(new_name)
                 _type, unit = measure
                 uri = child.attrib['uri']
                 if _type in self.allowed_types:
@@ -138,7 +143,6 @@ def setup_platform(
     _LOGGER.info("ETA Integration - setup platform")
     add_entities(Setup(config, hass).get_entries())
     _LOGGER.info("ETA Integration - setup complete")
-
 
 
 class EtaSensor(SensorEntity):
