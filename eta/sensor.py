@@ -109,7 +109,7 @@ class Setup:
                 _type, unit = measure
                 uri = child.attrib['uri']
                 if _type in self.allowed_types:
-                    self.entities[new_name] = EtaSensor(self.config, self.hass, new_name, uri, unit)
+                    self.entities[new_name] = EtaSensor(self.config, self.hass, new_name, uri, unit=unit)
 
 
 def get_entity_name(
@@ -136,8 +136,9 @@ def setup_platform(
     """Set up the sensor platform."""
 
     _LOGGER.info("ETA Integration - setup platform")
-
     add_entities(Setup(config, hass).get_entries())
+    _LOGGER.info("ETA Integration - setup complete")
+
 
 
 class EtaSensor(SensorEntity):
