@@ -92,7 +92,7 @@ class Setup:
         info = xmltodict.parse(val.text)['eta']
         # print(info)
         if 'varInfo' in info:
-            return info['varInfo']['variable']['type'], info['varInfo'].get('unit', '')
+            return info['varInfo']['variable']['type'], info['varInfo']['variable'].get('@unit', '')
         return None, None
 
     def _find_useful_entities(self, root, prev=""):
