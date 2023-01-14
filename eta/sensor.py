@@ -64,18 +64,7 @@ def get_base_url(
 
 VAR_PATH = "/user/var"
 MENU_PATH = "/user/menu"
-
-
-def bool_mapper(input):
-    return {
-        "ein": True,
-        "aus": False,
-        "eingeschaltet": True,
-        "ausgeschaltet": False,
-        "ja": True,
-        "nein": False,
-
-    }.get(input)
+VARINFO_PATH = "/user/varinfo"
 
 
 def get_measure(config, uri):
@@ -87,11 +76,16 @@ def get_measure(config, uri):
 
     if root.attrib.get('unit', '') != "":
         return float(str(root.text)) / scale, root.attrib.get('unit', '')
+
     else:
         # check_bool_mapper
-        bool_value = bool_mapper(root.attrib.get('strValue', '').lower())
-        if bool_value is not None:
-            return bool_value, 'bool'
+        return root.attrib.get('strValue', ''), 'str'
+
+
+def get_varinfo(config, uri):
+    # TODO --> make things writeable, as we now might find out the possible varinfo states!
+    # /user/varinfo
+    pass
 
 
 class Setup:
@@ -181,7 +175,7 @@ class EtaSensor(SensorEntity):
             "mV": (ELECTRIC_POTENTIAL_MILLIVOLT, (None, SensorDeviceClass.VOLTAGE)),
             "W/m²": (IRRADIATION_WATTS_PER_SQUARE_METER, (None, SensorDeviceClass.POWER)),
             "Pa": (PRESSURE_PA, (None, SensorDeviceClass.PRESSURE)),
-            "bool": (None, (None, SensorDeviceClass.REACTIVE_POWER))
+            "str": (None, (None, SensorDeviceClass.REACTIVE_POWER))
         }.get(unit, (None, None))
 
     def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT, factor=1.0):
@@ -211,9 +205,6 @@ class EtaSensor(SensorEntity):
 
         if hassio_unit is not None:
             self._attr_native_unit_of_measurement = hassio_unit
-        else:
-            if unit != "bool":
-                self._attr_name += f" {unit}"
 
         self.uri = uri
         self.factor = factor
@@ -238,6 +229,13 @@ class EtaSensor(SensorEntity):
         This is the only method that should fetch new data for Home Assistant.
         TODO: readme: activate first: http://www.holzheizer-forum.de/attachment/28434-eta-restful-v1-1-pdf/
         """
+        # state_class
         value, unit = get_measure(self.config, self.uri)
-        if value:
+        if not value:
+            return
+
+        if unit == "str":
+            self._attr_state_class = value
+
+        elif value:
             self._attr_native_value = value
