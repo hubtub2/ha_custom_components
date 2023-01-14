@@ -104,7 +104,7 @@ class Setup:
             entity_name = new_name
 
             count = 2
-            while new_name in self.entities:
+            while entity_name in self.entities:
                 entity_name = new_name + "_" + str(count)
                 count += 1
             new_name = entity_name
