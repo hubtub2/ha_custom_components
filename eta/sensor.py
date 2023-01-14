@@ -11,16 +11,16 @@ author hubtub2
 """
 
 from __future__ import annotations
-import requests
-import xmltodict
-from lxml import etree
+
 import logging
-import voluptuous as vol
 import xml.etree.ElementTree as ET
 
+import requests
+import voluptuous as vol
+import xmltodict
+from lxml import etree
+
 _LOGGER = logging.getLogger(__name__)
-VAR_PATH = "/user/var"
-MENU_PATH = "/user/menu"
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -42,7 +42,7 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.entity import generate_entity_id
 
 # See https://github.com/home-assistant/core/blob/dev/homeassistant/const.py
-from homeassistant.const import (CONF_HOST, CONF_PORT, TEMP_CELSIUS, ENERGY_KILO_WATT_HOUR, POWER_KILO_WATT,
+from homeassistant.const import (CONF_HOST, CONF_PORT, TEMP_CELSIUS, POWER_KILO_WATT,
                                  MASS_KILOGRAMS)
 
 # See https://community.home-assistant.io/t/problem-with-scan-interval/139031
@@ -67,33 +67,13 @@ MENU_PATH = "/user/menu"
 VARINFO_PATH = "/user/varinfo"
 
 
-def get_measure(config, uri):
-    val = requests.get(get_base_url(config, VAR_PATH) + uri).content.decode("utf8")
-    root = ET.fromstring(val)[0]
-
-    # div = pow(0.1, (int(root.attrib.get("decPlaces", "0"))))
-    scale = (int(root.attrib.get("scaleFactor", "1")))
-
-    if root.attrib.get('unit', '') != "":
-        return float(str(root.text)) / scale, root.attrib.get('unit', '')
-
-    else:
-        # check_bool_mapper
-        return root.attrib.get('strValue', ''), 'str'
-
-
-def get_varinfo(config, uri):
-    # TODO --> make things writeable, as we now might find out the possible varinfo states!
-    # /user/varinfo
-    pass
-
-
 class Setup:
 
     def __init__(self, config, hass):
         self.config = config
         self.hass = hass
         self.entities = {}
+        self.allowed_types = ["DEFAULT", "TEXT"]
 
         res = requests.get(get_base_url(self.config, MENU_PATH)).content.decode("utf8")
         self._find_useful_entities(ET.fromstring(res))
@@ -106,6 +86,15 @@ class Setup:
         words = name.split(" ")
         return " ".join(sorted(set(words), key=words.index))
 
+    def _get_varinfo(self, uri):
+        # TODO --> make things writeable, as we now might find out the possible varinfo states!
+        val = requests.get(get_base_url(self.config, VAR_PATH) + uri)
+        info = xmltodict.parse(val.text)['eta']
+        # print(info)
+        if 'varInfo' in info:
+            return info['varInfo']['variable']['type'], info['varInfo'].get('unit', '')
+        return None, None
+
     def _find_useful_entities(self, root, prev=""):
         for child in root:
             self._find_useful_entities(child, prev=prev + " " + child.attrib.get("name", ""))
@@ -114,13 +103,13 @@ class Setup:
             if new_name in self.entities:
                 continue
 
-            measure = get_measure(self.config, child.attrib['uri'])
+            measure = self._get_varinfo(child.attrib['uri'])
             if measure:
                 new_name = self._remove_duplicates_from_name(new_name)
-                value, unit = measure
+                _type, unit = measure
                 uri = child.attrib['uri']
-
-                self.entities[new_name] = EtaSensor(self.config, self.hass, new_name, uri, unit)
+                if _type in self.allowed_types:
+                    self.entities[new_name] = EtaSensor(self.config, self.hass, new_name, uri, unit)
 
 
 def get_entity_name(
@@ -160,25 +149,39 @@ class EtaSensor(SensorEntity):
     @staticmethod
     def _unit_mapper(unit):
         return {
-            "Hz": (FREQUENCY_HERTZ, (None, SensorDeviceClass.FREQUENCY)),
-            "kW": (POWER_KILO_WATT, (None, SensorDeviceClass.POWER)),
-            "°C": (TEMP_CELSIUS, (None, SensorDeviceClass.TEMPERATURE)),
-            "kg": (MASS_KILOGRAMS, (None, SensorDeviceClass.WEIGHT)),
-            "bar": (PRESSURE_BAR, (None, SensorDeviceClass.PRESSURE)),
-            "A": (ELECTRIC_CURRENT_MILLIAMPERE, (None, SensorDeviceClass.CURRENT)),
-            "s": (TIME_SECONDS, (None, SensorDeviceClass.TIMESTAMP)),
-            "V": (ELECTRIC_POTENTIAL_VOLT, (None, SensorDeviceClass.VOLTAGE)),
-            "m²": (AREA_SQUARE_METERS, (None, SensorDeviceClass.DATA_SIZE)),
-            "%": (PERCENTAGE, (None, SensorDeviceClass.POWER_FACTOR)),
-            "W": (POWER_WATT, (None, SensorDeviceClass.ENERGY)),
-            "l": (VOLUME_LITERS, (None, SensorDeviceClass.WATER)),
-            "mV": (ELECTRIC_POTENTIAL_MILLIVOLT, (None, SensorDeviceClass.VOLTAGE)),
-            "W/m²": (IRRADIATION_WATTS_PER_SQUARE_METER, (None, SensorDeviceClass.POWER)),
-            "Pa": (PRESSURE_PA, (None, SensorDeviceClass.PRESSURE)),
-            "str": (None, (None, SensorDeviceClass.REACTIVE_POWER))
+            "Hz": (FREQUENCY_HERTZ, SensorDeviceClass.FREQUENCY),
+            "kW": (POWER_KILO_WATT, SensorDeviceClass.POWER),
+            "°C": (TEMP_CELSIUS, SensorDeviceClass.TEMPERATURE),
+            "kg": (MASS_KILOGRAMS, SensorDeviceClass.WEIGHT),
+            "bar": (PRESSURE_BAR, SensorDeviceClass.PRESSURE),
+            "A": (ELECTRIC_CURRENT_MILLIAMPERE, SensorDeviceClass.CURRENT),
+            "s": (TIME_SECONDS, SensorDeviceClass.TIMESTAMP),
+            "V": (ELECTRIC_POTENTIAL_VOLT, SensorDeviceClass.VOLTAGE),
+            "m²": (AREA_SQUARE_METERS, SensorDeviceClass.DATA_SIZE),
+            "%": (PERCENTAGE, SensorDeviceClass.POWER_FACTOR),
+            "W": (POWER_WATT, SensorDeviceClass.ENERGY),
+            "l": (VOLUME_LITERS, SensorDeviceClass.WATER),
+            "mV": (ELECTRIC_POTENTIAL_MILLIVOLT, SensorDeviceClass.VOLTAGE),
+            "W/m²": (IRRADIATION_WATTS_PER_SQUARE_METER, SensorDeviceClass.POWER),
+            "Pa": (PRESSURE_PA, SensorDeviceClass.PRESSURE),
+            "str": (None, SensorDeviceClass.REACTIVE_POWER)
         }.get(unit, (None, None))
 
-    def __init__(self, config, hass, name, uri, unit, state_class=SensorStateClass.MEASUREMENT, factor=1.0):
+    def get_measure(self, uri):
+        val = requests.get(get_base_url(self.config, VAR_PATH) + uri).content.decode("utf8")
+        root = ET.fromstring(val)[0]
+
+        # div = pow(0.1, (int(root.attrib.get("decPlaces", "0"))))
+        scale = (int(root.attrib.get("scaleFactor", "1")))
+
+        if root.attrib.get('unit', '') != "":
+            return float(str(root.text)) / scale, root.attrib.get('unit', '')
+
+        else:
+            # check_bool_mapper
+            return root.attrib.get('strValue', ''), 'str'
+
+    def __init__(self, config, hass, name, uri, unit=None, state_class=SensorStateClass.MEASUREMENT, factor=1.0):
         """
         Initialize sensor.
         
@@ -192,13 +195,17 @@ class EtaSensor(SensorEntity):
         """
         _LOGGER.info(f"ETA Integration - Init Sensor: {name}")
 
-        self._attr_state_class = state_class
+        # disable sensor by default
+        self._attr_entity_registry_enabled_default = False
 
-        id = name.lower().replace(' ', '_')
+        _id = name.lower().replace(' ', '_')
         self._attr_name = name  # friendly name - local language
-        self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "eta_" + id, hass=hass)
+        self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, "eta_" + _id, hass=hass)
 
         hassio_unit, device_class = self._unit_mapper(unit)
+
+        if unit:
+            self._attr_state_class = state_class
 
         if device_class is not None:
             self._attr_device_class = device_class
@@ -230,12 +237,11 @@ class EtaSensor(SensorEntity):
         TODO: readme: activate first: http://www.holzheizer-forum.de/attachment/28434-eta-restful-v1-1-pdf/
         """
         # state_class
-        value, unit = get_measure(self.config, self.uri)
+        value, unit = self.get_measure(self.uri)
         if not value:
             return
 
         if unit == "str":
-            self._attr_state_class = value
+            self._attr_state = value
 
-        elif value:
-            self._attr_native_value = value
+        self._attr_native_value = value
