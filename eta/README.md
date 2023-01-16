@@ -15,5 +15,11 @@ sensor:
     scan_interval: 60
 ```
 
-Restart your home assistant.
-Because every possible measurement is added, every sensor that is needed has to be enabled manually.
+1. Restart your home assistant.
+2. Wait for like 5 Minutes, as the startup takes some time.
+3. Because every possible measurement is added, entities are disabled by default. Every sensor that is needed has to be enabled manually.
+
+# Yet to add
+- Use async await library for updating, and initial setup of the sensors
+- Enable Timed Entities
+- Enable writing of certain components
