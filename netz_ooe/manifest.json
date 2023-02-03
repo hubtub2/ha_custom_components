@@ -4,7 +4,7 @@
   "documentation": "todo",
   "dependencies": [],
   "codeowners": [],
-  "requirements": ["requests", "json"],
+  "requirements": ["requests"],
   "iot_class": "local_polling",
   "version": "0.0.1"
 }
