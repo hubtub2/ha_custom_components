@@ -1,5 +1,5 @@
 """
-Platform for Netz OOe sensor integration in Home Assistant
+Platform for Netz OOE sensor integration in Home Assistant
 
 Help Links:
  Entity Source: https://github.com/home-assistant/core/blob/dev/homeassistant/helpers/entity.py
