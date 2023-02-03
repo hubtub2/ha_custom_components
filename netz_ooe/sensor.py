@@ -1,16 +1,18 @@
 """
-Platform for ETA sensor integration in Home Assistant
+Platform for Netz OOe sensor integration in Home Assistant
 
 Help Links:
  Entity Source: https://github.com/home-assistant/core/blob/dev/homeassistant/helpers/entity.py
  SensorEntity derives from Entity https://github.com/home-assistant/core/blob/dev/homeassistant/components/sensor/__init__.py
 
 
-author hubtub2
+author Peda1996
 
 """
 
 from __future__ import annotations
+
+from datetime import timedelta
 
 import json
 import logging
@@ -48,7 +50,9 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
     vol.Required(CONF_NAME): cv.string
 })
 
-BASE_URL = ""
+# TODO make this configurable
+# only fetch the site every 2 hours
+SCAN_INTERVAL = timedelta(hours=2)
 
 
 def setup_platform(
@@ -77,7 +81,7 @@ class SmartMeter(SensorEntity):
 
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
-        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_state_class = SensorStateClass.TOTAL
 
         _id = config.get(CONF_NAME).lower().replace(' ', '_')
         self._attr_name = config.get(CONF_NAME)
@@ -105,7 +109,7 @@ class SmartMeter(SensorEntity):
         }
 
         json_data = {
-            'j_username':  self.username,
+            'j_username': self.username,
             'j_password': self.password
         }
 
