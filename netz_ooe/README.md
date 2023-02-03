@@ -15,7 +15,7 @@ sensor:
     scan_interval: 60
 ```
 
-After that just restart your home assistant.
+After that just restart your home assistant. It might take 15 minutes for the values to appear.
 
 
 ## Additional info:
