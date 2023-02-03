@@ -52,7 +52,7 @@ PLATFORM_SCHEMA = PLATFORM_SCHEMA.extend({
 
 # TODO make this configurable
 # only fetch the site every 15 minutes
-SCAN_INTERVAL = timedelta(minutes=15)
+SCAN_INTERVAL = timedelta(hours=1)
 
 
 def setup_platform(
