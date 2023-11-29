@@ -1,0 +1,5 @@
+{
+    "name": "ETA Heating",
+    "render_readme": true,
+    "homeassistant": "2022.1.0b0"
+}
